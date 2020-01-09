@@ -62,7 +62,6 @@ public class WordCountDemo {
         //打印
         counts.print();
         environment.execute("wordcount");
-
     }
 
 }
