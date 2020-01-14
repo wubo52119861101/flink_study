@@ -11,6 +11,8 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
+import java.util.stream.Stream;
+
 public class WordCountDemo {
 
     public static class WordWithCount {
@@ -35,33 +37,23 @@ public class WordCountDemo {
     }
 
     public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
-        DataStream<String> dataStream = environment.socketTextStream("localhost", 9999);
-        //开始计算 生成一个个的元组 word,1
-        SingleOutputStreamOperator<WordWithCount> pairsWords = dataStream
-            .flatMap(new FlatMapFunction<String, WordWithCount>() {
-                @Override
-                public void flatMap(String s, Collector<WordWithCount> out) throws Exception {
+        StreamExecutionEnvironment environment=StreamExecutionEnvironment.getExecutionEnvironment();
+        //从socket中读取单词
+        DataStream<String> dataStream=environment.socketTextStream("localhost",9999);
+        SingleOutputStreamOperator<WordWithCount> parisWords=dataStream.flatMap(new FlatMapFunction<String, WordWithCount>() {
+            @Override
+            public void flatMap(String s, Collector<WordWithCount> out) throws Exception {
+                String[] splits=s.split(" ");
+                for(String word:splits){
 
-                    String[] splits = s.split(" ");
-                    for (String word : splits) {
-
-                        out.collect(new WordWithCount(word, 1L));
-                    }
+                    out.collect(new WordWithCount(word,1L));
                 }
-            });
-        //将元组按照key 进行分组，将所有数据中包含该key的数据都发送到同一个分区上
-        KeyedStream<WordWithCount, Tuple> grouped = pairsWords.keyBy("word");
-        //调用窗口操作
-        //timeWindow时间窗口函数，以界定对多长时间内的数据做统计
-        //需要给两个重要的参数:窗口长度和滑动间隔
-        WindowedStream<WordWithCount, Tuple, TimeWindow> window = grouped.timeWindow(Time.seconds(2), Time.seconds(1));
-        //求和函数， 表示对二元组中第二个元素求和，因为经过前面的keyBy,所有的单词都被发到同一个分区上，因此在一个分区上
-        //将单词出现的次数进行累加，得到的就是单词出现的总次数
-        SingleOutputStreamOperator<WordWithCount> counts = window.sum("count");
-        //打印
-        counts.print();
+            }
+        });
+        KeyedStream<WordWithCount, Tuple> words = parisWords.keyBy("word");
+        WindowedStream<WordWithCount, Tuple, TimeWindow> wordWithCountTupleTimeWindowWindowedStream = words.timeWindow(Time.seconds(5), Time.seconds(3));
+        SingleOutputStreamOperator<WordWithCount> count = wordWithCountTupleTimeWindowWindowedStream.sum("count");
+        count.print();
         environment.execute("wordcount");
     }
-
 }

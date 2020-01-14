@@ -10,7 +10,7 @@ public class FilterTest {
 
         StreamExecutionEnvironment environment=StreamExecutionEnvironment.getExecutionEnvironment();
 
-        DataStream<String> dataStream=environment.readTextFile("/Users/wubo/Documents/GitHub/flink_study/test.txt");
+        DataStream<String> dataStream=environment.readTextFile("G:/github/flink_study/test.txt");
 
         //filter算子对读取进来的数据进行过滤，对每个元素都进行判断，返回true的元素，如果返回false则丢弃该数据
         DataStream<String> filterStream=dataStream.filter(new FilterFunction<String>() {
